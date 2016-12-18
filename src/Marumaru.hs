@@ -1,17 +1,18 @@
-{-# LANGUAGE Arrows                    #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE Arrows            #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Maru
+module Marumaru
     ( allMangas
     ) where
 
+import           Control.Monad              (liftM2)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy.UTF8  as L8
+import qualified Data.Text                  as T
 import           Network.HTTP.Simple
 import           Text.HandsomeSoup
 import           Text.XML.HXT.Core
-import           Types                      (Manga(..))
+import           Types                      (Manga (..))
 
 -- allMangas :: IO (Maybe [Manga])
 allMangas :: IO [Manga]
@@ -27,7 +28,14 @@ getManga = css ".widget_review01 ul li"
            >>> proc x -> do
                  title <- (css "div" //> getText) -< x
                  link <- (css "a" ! "href") -< x
-                 returnA -< Manga
-                  { title = title
-                  , link = link
+                 returnA -< Manga -- mangaDefault
+                  { Types.id   = read . dropWhile (not . liftM2 (&&) (>='0') (<='9')) $ link
+                  , name       = T.pack title
+                  , authors    = []
+                  , groups     = []
+                  , type'      = ""
+                  , language   = ""
+                  , serieses   = []
+                  , characters = []
+                  , tags       = []
                   }

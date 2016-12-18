@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Hitomi
+-- import           Hitomi
 import           Marumaru
 import           Sucuri
 import           Text.Show.Unicode

@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-                     , Hitomi
+                    --  , Hitomi
                      , Marumaru
                      , Sucuri
                      , Types
@@ -25,11 +25,12 @@ library
                      , attoparsec
                      , base64-bytestring
                      , bytestring
-                     , HandsomeSoup
+                     , html-conduit
                      , http-conduit
-                     , hxt
                      , text
+                     , unicode-show
                      , utf8-string
+                     , xml-conduit
   default-language:    Haskell2010
 
 executable gentleman-exe

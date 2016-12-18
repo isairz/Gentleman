@@ -2,7 +2,8 @@
 
 module Types
     ( Manga(..)
-    -- , mangaDefault
+    , Chapter(..)
+    , defaultManga
     ) where
 
 import           Data.Text
@@ -17,22 +18,25 @@ data Manga = Manga
   , serieses   :: [Text]
   , characters :: [Text]
   , tags       :: [Text]
+  , chapters   :: [Chapter]
   } deriving (Show, Eq)
 
--- data Chapter = Chapter
---   { id   :: Int
---   , name :: Text
---   }
+data Chapter = Chapter
+  { chapter_id   :: Int
+  , chapter_name :: Text
+  } deriving (Show, Eq)
 
 -- pages
 
--- mangaDefault = Manga
---   { name = ""
---   , authors    = []
---   , groups     = []
---   , type'      = ""
---   , language   = ""
---   , serieses   = []
---   , characters = []
---   , tags       = []
---   }
+defaultManga = Manga
+  { Types.id   = 0
+  , name       = ""
+  , authors    = []
+  , groups     = []
+  , type'      = ""
+  , language   = ""
+  , serieses   = []
+  , characters = []
+  , tags       = []
+  , chapters   = []
+  }

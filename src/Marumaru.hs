@@ -2,39 +2,59 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Marumaru
-    ( allMangas
+    ( mangaList
+    , mangaDetail
     ) where
 
 import           Control.Monad
+import qualified Data.ByteString.Char8      as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.ByteString.Lazy.UTF8  as BL
+import           Data.Char                  (isDigit)
+import           Data.Maybe
 import qualified Data.Text                  as T
 import           Network.HTTP.Simple
-import           Text.HandsomeSoup
-import           Text.XML.HXT.Core
-import           Types                      (Manga (..))
+import           Text.HTML.DOM              as Html
+import           Text.Show.Unicode
+import           Text.XML
+import           Text.XML.Cursor
+import           Types                      (Chapter (..), Manga (..),
+                                             defaultManga)
 
-allMangas :: IO [Manga]
-allMangas = do
-  response <- httpLBS $ setRequestHeader "User-Agent" ["Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.94 Safari/537.36"]
-                      $ "http://marumaru.in/c/1"
-  let doc = parseHtml . BL.toString . getResponseBody $ response
-  mangas <- runX $ doc >>> getManga
-  return mangas
+lastInteger :: Read a => T.Text -> a
+lastInteger t = read . T.unpack $ T.takeWhileEnd isDigit t
 
-getManga :: ArrowXml a => a XmlTree Manga
-getManga = css ".widget_review01 ul li"
-           >>> proc x -> do
-                 title <- (css "div" //> getText) -< x
-                 link <- (css "a" ! "href") -< x
-                 returnA -< Manga -- mangaDefault
-                  { Types.id   = read . dropWhile (not . liftM2 (&&) (>='0') (<='9')) $ link
-                  , name       = T.pack title
-                  , authors    = []
-                  , groups     = []
-                  , type'      = ""
-                  , language   = ""
-                  , serieses   = []
-                  , characters = []
-                  , tags       = []
-                  }
+mangaList :: IO [Manga]
+mangaList = do
+  response <- httpLBS $ setRequestHeader "User-Agent" ["Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36"]
+                      $ "http://marumaru.in/p/mobilemangamain"
+  let cursor = fromDocument . Html.parseLBS . getResponseBody $ response
+  return $ cursor $// attributeIs "class" "widget_review01"
+                  &/  element "ul" &/ element "li"
+                  >=> \x -> do
+                       let title = head $ x $// element "div" &// content
+                       let link = head $ x $// element "a" >=> attribute "href"
+                       return defaultManga
+                             { Types.id   = lastInteger link
+                             , name       = title
+                             }
+
+mangaDetail :: Manga -> IO Manga
+mangaDetail manga = do
+  url <- parseRequest ("http://marumaru.in/b/manga/" ++ (show $ Types.id manga))
+  response <- httpLBS $ setRequestHeader "User-Agent" ["Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36"]
+                      $ url
+  let cursor = fromDocument . Html.parseLBS . getResponseBody $ response
+  let links = catMaybes $ cursor
+                  $// attributeIs "id" "vContent" &// element "a"
+                  >=> \x -> do
+                       let name = T.concat $ x $// content
+                       let link = head $ x $| attribute "href"
+                       return $ if ((not . T.null $ name) && ("archives" `T.isInfixOf` link))
+                                then Just Chapter
+                                    { chapter_id = lastInteger link
+                                    , chapter_name = name
+                                    }
+                                else Nothing
+
+  return manga { chapters = links }

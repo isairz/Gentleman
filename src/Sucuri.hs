@@ -2,7 +2,7 @@
 
 module Sucuri
     ( decode
-    -- , findSucuri
+    , decryptCookie
     ) where
 
 import           Control.Applicative
@@ -10,25 +10,44 @@ import           Control.Monad
 import           Data.Attoparsec.ByteString       as AP
 import           Data.Attoparsec.ByteString.Char8 as AP8
 import qualified Data.ByteString.Base64           as Base64
-import qualified Data.ByteString.Char8            as B8
+import qualified Data.ByteString.Char8            as B
+import qualified Data.ByteString.Lazy.Char8       as BL
+import qualified Data.ByteString.Lazy.Search      as BL
 import           Data.Char                        (chr)
--- import           Text.Regex.Posix                 ((=~))
--- import           Text.Regex.Posix.ByteString
 
--- findSucuri :: B8.ByteString -> B8.ByteString
--- findSucuri =
---   where pat = "sucuri_cloudproxy_js='',S='([^']+)" :: B8.ByteString
---         (_, _, _, a:_) = body =~ pat
+import           Data.Time.Calendar
+import           Data.Time.Clock
+import           Network.HTTP.Conduit             as Http
 
-decode :: B8.ByteString -> B8.ByteString
+
+decryptCookie :: BL.ByteString -> Cookie
+decryptCookie html = Cookie { cookie_name = cookieName
+                            , cookie_value = cookieValue
+                            , cookie_expiry_time = future
+                            , cookie_domain = "www.yuncomics.com"
+                            , cookie_path = "/"
+                            , cookie_creation_time = past
+                            , cookie_last_access_time = past
+                            , cookie_persistent = False
+                            , cookie_host_only = False
+                            , cookie_secure_only = False
+                            , cookie_http_only = False
+                            }
+  where past = UTCTime (ModifiedJulianDay 56200) (secondsToDiffTime 0)
+        future = UTCTime (ModifiedJulianDay 562000) (secondsToDiffTime 0)
+        cookieName:cookieValue:_ = B.split '=' . Sucuri.decode . BL.strictify . BL.takeWhile (/= '\'') . snd
+                                $ BL.breakAfter "sucuri_cloudproxy_js='',S='" html
+
+
+decode :: B.ByteString -> B.ByteString
 decode base64 =
   case Base64.decode base64 of
-    Left err -> B8.pack err
-    Right js -> case parseOnly (sucuri <* endOfInput) (B8.filter (not . isSpace) js) of
-                  Left err     -> B8.pack err
+    Left err -> B.pack err
+    Right js -> case parseOnly (sucuri <* endOfInput) (B.filter (not . isSpace) js) of
+                  Left err     -> B.pack err
                   Right result -> result
 
-sucuri :: Parser B8.ByteString
+sucuri :: Parser B.ByteString
 sucuri = do
   AP8.take 2 -- 'b='
   b <- expr
@@ -37,49 +56,49 @@ sucuri = do
   AP8.take 3 -- '+b+'
   c <- expr
   string ";location.reload();"
-  return $ a `B8.append` b `B8.append` c
+  return $ a `B.append` b -- `B.append` c
 
-expr :: Parser B8.ByteString
-expr = B8.concat <$> sepBy term (char '+')
+expr :: Parser B.ByteString
+expr = B.concat <$> sepBy term (char '+')
 
-term :: Parser B8.ByteString
+term :: Parser B.ByteString
 term = base >>= func
 
-base :: Parser B8.ByteString
+base :: Parser B.ByteString
 base = between '"'
    <|> between '\''
-   <|> (B8.singleton . chr) <$> (string "String.fromCharCode(" *> num <* char ')')
+   <|> (B.singleton . chr) <$> (string "String.fromCharCode(" *> num <* char ')')
    where between c = char c *> AP8.takeWhile (/= c) <* char c
 
-func :: B8.ByteString -> Parser B8.ByteString
+func :: B.ByteString -> Parser B.ByteString
 func s = charAt s
      <|> slice s
      <|> substr s
      <|> pure s
 
--- charAt = (<$> (string ".charAt(" *> num <* char ')')) . (B8.singleton .) . B8.index
-charAt :: B8.ByteString -> Parser B8.ByteString
+-- charAt = (<$> (string ".charAt(" *> num <* char ')')) . (B.singleton .) . B.index
+charAt :: B.ByteString -> Parser B.ByteString
 charAt s = do
   at <- string ".charAt(" *> num <* char ')'
-  return $ B8.singleton $ B8.index s at
+  return $ B.singleton $ B.index s at
 
-slice :: B8.ByteString -> Parser B8.ByteString
+slice :: B.ByteString -> Parser B.ByteString
 slice s = do
   string ".slice("
   from <- num
   char ','
   to <- num
   char ')'
-  return $ B8.take (to - from) $ B8.drop from s
+  return $ B.take (to - from) $ B.drop from s
 
-substr :: B8.ByteString -> Parser B8.ByteString
+substr :: B.ByteString -> Parser B.ByteString
 substr s = do
   string ".substr("
   start <- num
   char ','
   len <- num
   char ')'
-  return $ B8.take len $ B8.drop start s
+  return $ B.take len $ B.drop start s
 
 num :: Parser Int
 num = string "0x" *> hexadecimal

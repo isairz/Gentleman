@@ -48,7 +48,7 @@ term = base >>= func
 base :: Parser B8.ByteString
 base = between '"'
    <|> between '\''
-   <|> (string "String.fromCharCode(" *> num <* char ')' >>= return . B8.singleton . chr)
+   <|> (B8.singleton . chr) <$> (string "String.fromCharCode(" *> num <* char ')')
    where between c = char c *> AP8.takeWhile (/= c) <* char c
 
 func :: B8.ByteString -> Parser B8.ByteString

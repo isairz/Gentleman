@@ -16,6 +16,7 @@ import           Types
 main :: IO ()
 main = do
   scrapMarumaru
+  return ()
 
 mapPool :: T.Traversable t => Int -> (a -> IO b) -> t a -> IO (t b)
 mapPool max f xs = do
@@ -25,7 +26,7 @@ mapPool max f xs = do
 forPool :: T.Traversable t => Int -> t a -> (a -> IO b) -> IO (t b)
 forPool max = flip $ mapPool max
 
-scrapMarumaru :: IO ()
+scrapMarumaru :: IO [Manga]
 scrapMarumaru = do
   mangas <- Marumaru.mangaList
   uprint $ take 10 mangas
@@ -38,4 +39,4 @@ scrapMarumaru = do
     return manga'
 
   uprint $ length mangas'
-  return ()
+  return mangas'

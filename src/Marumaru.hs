@@ -56,5 +56,4 @@ mangaDetail manga = do
                                     , chapter_name = name
                                     }
                                 else Nothing
-
   return manga { chapters = links }

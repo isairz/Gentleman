@@ -9,10 +9,12 @@ module Marumaru
 
 import           Control.Monad
 import qualified Data.ByteString.Lazy.Char8  as BL
+import qualified Data.ByteString.Lazy.Search as BL
 import qualified Data.ByteString.Lazy.UTF8   as BL
 import           Data.Char                   (isDigit, ord)
 import           Data.Maybe
 import qualified Data.Text                   as T
+import qualified Data.Text.Encoding          as T
 import           Network.HTTP.Conduit        as Http
 import           Network.HTTP.Simple
 import qualified Sucuri
@@ -64,7 +66,7 @@ mangaDetail manga = do
                                           else Nothing
   return manga { chapters = links }
 
-imageList :: CookieJar -> Int -> IO [Page]
+-- imageList :: CookieJar -> Int -> IO [Page]
 imageList jar i = do
   req' <- parseRequest ("http://www.yuncomics.com/archives/" ++ show i ++ "?549234")
   let req = setRequestHeader "User-Agent" ["Android 5.0"]
@@ -72,8 +74,12 @@ imageList jar i = do
           $ setRequestHeader "Upgrade-Insecure-Requests" ["1"]
           $ req' { cookieJar = Just jar }
   body <- liftM getResponseBody $ httpLBS req
-  BL.putStrLn body
-  return []
+  return $ getDataSrcs body
+
+getDataSrcs :: BL.ByteString -> [T.Text]
+getDataSrcs str = do
+  let (src, left) = BL.breakOn "\"" . snd $ BL.breakAfter "data-src=\"" str
+  if BL.null left then [] else (T.decodeUtf8 $ BL.toStrict src):(getDataSrcs left)
 
 
 getCookieJar :: IO CookieJar

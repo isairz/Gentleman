@@ -35,7 +35,7 @@ decryptCookie html = Cookie { cookie_name = cookieName
                             }
   where past = UTCTime (ModifiedJulianDay 56200) (secondsToDiffTime 0)
         future = UTCTime (ModifiedJulianDay 562000) (secondsToDiffTime 0)
-        cookieName:cookieValue:_ = B.split '=' . Sucuri.decode . BL.strictify . BL.takeWhile (/= '\'') . snd
+        cookieName:cookieValue:_ = B.split '=' . Sucuri.decode . BL.toStrict . BL.takeWhile (/= '\'') . snd
                                 $ BL.breakAfter "sucuri_cloudproxy_js='',S='" html
 
 

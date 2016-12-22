@@ -7,6 +7,7 @@ module Marumaru
     , getCookieJar
     ) where
 
+import           Control.Exception.Extra
 import           Control.Monad
 import qualified Data.ByteString.Lazy.Char8  as BL
 import qualified Data.ByteString.Lazy.Search as BL
@@ -30,11 +31,13 @@ lastToInt :: T.Text -> Int
 lastToInt t = T.foldl (\n c -> n * 10 + ord c - ord '0') 0
                         $ T.takeWhileEnd isDigit t
 
+requestWithRetry :: Request -> IO (Response BL.ByteString)
+requestWithRetry req = retry 10 $ httpLBS req
+
 requestDoc :: String -> IO Document
 requestDoc url = do
   url' <- parseRequest url
-  response <- httpLBS $ setRequestHeader "User-Agent" ["Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36"]
-                        url'
+  response <- requestWithRetry $ setRequestHeader "User-Agent" ["Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36"] url'
   return . Html.parseLBS . getResponseBody $ response
 
 mangaList :: IO [Manga]
@@ -66,17 +69,17 @@ mangaDetail manga = do
                                           else Nothing
   return manga { chapters = links }
 
--- imageList :: CookieJar -> Int -> IO [Page]
+imageList :: CookieJar -> Int -> IO [Page]
 imageList jar i = do
   req' <- parseRequest ("http://www.yuncomics.com/archives/" ++ show i ++ "?549234")
   let req = setRequestHeader "User-Agent" ["Android 5.0"]
           $ setRequestHeader "Cache-Control" ["max-age=0"]
           $ setRequestHeader "Upgrade-Insecure-Requests" ["1"]
           $ req' { cookieJar = Just jar }
-  body <- liftM getResponseBody $ httpLBS req
+  body <- liftM getResponseBody $ requestWithRetry req
   return $ getDataSrcs body
 
-getDataSrcs :: BL.ByteString -> [T.Text]
+getDataSrcs :: BL.ByteString -> [Page]
 getDataSrcs str = do
   let (src, left) = BL.breakOn "\"" . snd $ BL.breakAfter "data-src=\"" str
   if BL.null left then [] else (T.decodeUtf8 $ BL.toStrict src):(getDataSrcs left)

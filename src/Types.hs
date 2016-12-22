@@ -27,10 +27,7 @@ data Chapter = Chapter
   , chapter_name :: Text
   } deriving (Show, Eq)
 
-data Page = Page
-  { page_id :: Int
-  , origin  :: Text
-  } deriving (Show, Eq)
+type Page = Text
 
 defaultManga = Manga
   { Types.id   = 0

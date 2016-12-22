@@ -6,6 +6,7 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.MSem
 import           Control.Monad
 import qualified Data.Text                as T
+import qualified Data.Text.IO             as T
 import qualified Data.Traversable         as T
 import           Marumaru
 import           Sucuri
@@ -15,7 +16,8 @@ import           Types
 
 main :: IO ()
 main = do
-  scrapMarumaru
+  mangas <- scrapMarumaru
+  -- singleMarumaru 1195171
   return ()
 
 mapPool :: T.Traversable t => Int -> (a -> IO b) -> t a -> IO (t b)
@@ -28,15 +30,29 @@ forPool max = flip $ mapPool max
 
 scrapMarumaru :: IO [Manga]
 scrapMarumaru = do
+  -- Get Manga List
   mangas <- Marumaru.mangaList
-  uprint $ take 10 mangas
-  uprint $ length mangas
+
+  -- Get Manga Detail & Chapter Link
   mangas' <- forPool 1000 mangas $ \manga -> do
     manga' <- Marumaru.mangaDetail manga
     -- FIXME: Show Progress
-    -- uprint $ name manga'
-    -- uprint $ (T.unpack $ name manga) ++ " " ++ (ushow $ length $ chapters manga')
+    -- T.putStrLn $ name manga `T.append` " " `T.append` (T.pack $ show $ length $ chapters manga')
     return manga'
 
-  uprint $ length mangas'
+  Types.id manga
+  mapM_ (\manga' -> mapM_ (print . chapter_id) $ chapters manga') mangas'
+  -- Get Image srcs
+  let cids = map chapter_id $ concat $ chapters <$> mangas'
+  jar <- Marumaru.getCookieJar
+  forPool 1000 cids $ \cid -> do
+    srcs <- Marumaru.imageList jar cid
+    T.putStrLn $ (T.pack $ show cid) `T.append` " (" `T.append` (T.pack $ show $ length srcs) `T.append` ")"
+    mapM_ T.putStrLn srcs
   return mangas'
+
+singleMarumaru cid = do
+  jar <- Marumaru.getCookieJar
+  srcs <- Marumaru.imageList jar cid
+  mapM_ T.putStrLn srcs
+  return ()

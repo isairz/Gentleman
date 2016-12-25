@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Types
+module ROD.Gentleman.Types
     ( Manga(..)
+    , defaultManga
     , Chapter(..)
     , Page(..)
-    , defaultManga
     ) where
 
 import           Data.Text
 
 data Manga = Manga
-  { id         :: Int
+  { idx        :: Int
   , name       :: Text
   , authors    :: [Text]
   , groups     :: [Text]
@@ -30,7 +30,7 @@ data Chapter = Chapter
 type Page = Text
 
 defaultManga = Manga
-  { Types.id   = 0
+  { idx        = 0
   , name       = ""
   , authors    = []
   , groups     = []

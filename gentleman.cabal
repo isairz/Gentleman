@@ -15,11 +15,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
-                    --  , Hitomi
-                     , Marumaru
-                     , Sucuri
-                     , Types
+  exposed-modules:     ROD.Gentleman
+                     , ROD.Gentleman.Types
+                     , ROD.Gentleman.Site.CloudFlare
+                    --  , ROD.Gentleman.Site.Hitomi
+                     , ROD.Gentleman.Site.Marumaru
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , attoparsec

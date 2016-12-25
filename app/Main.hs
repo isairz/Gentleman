@@ -5,13 +5,12 @@ module Main where
 import           Control.Concurrent.Async
 import           Control.Concurrent.MSem
 import           Control.Monad
-import qualified Data.Text                as T
-import qualified Data.Text.IO             as T
-import qualified Data.Traversable         as T
-import           Marumaru
-import           Sucuri
-import           Text.Show.Unicode
-import           Types
+import qualified Data.Text                   as T
+import qualified Data.Text.IO                as T
+import qualified Data.Traversable            as T
+
+import           ROD.Gentleman.Site.Marumaru as Marumaru
+import           ROD.Gentleman.Types as Types
 
 
 main :: IO ()

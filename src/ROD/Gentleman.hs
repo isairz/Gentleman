@@ -1,4 +1,4 @@
-module Lib
+module ROD.Gentleman
     ( someFunc
     ) where
 

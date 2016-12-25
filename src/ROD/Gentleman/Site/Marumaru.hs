@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Marumaru
+module ROD.Gentleman.Site.Marumaru
     ( mangaList
     , mangaDetail
     , imageList
@@ -9,26 +9,27 @@ module Marumaru
 
 import           Control.Monad
 import           Control.Retry
-import           Data.Char                   (isDigit, ord)
-import           Data.Maybe                  (catMaybes)
-import           Data.Monoid                 ((<>))
+import           Data.Char                     (isDigit, ord)
+import           Data.Maybe                    (catMaybes)
+import           Data.Monoid                   ((<>))
 
-import qualified Data.ByteString.Char8       as B
-import qualified Data.ByteString.Lazy.Char8  as BL
-import qualified Data.ByteString.Lazy.Search as BL
-import qualified Data.ByteString.Lazy.UTF8   as BLcx
-import qualified Data.Text                   as T
-import qualified Data.Text.Encoding          as T
-import qualified Sucuri
+import qualified Data.ByteString.Char8         as B
+import qualified Data.ByteString.Lazy.Char8    as BL
+import qualified Data.ByteString.Lazy.Search   as BL
+import qualified Data.ByteString.Lazy.UTF8     as BLcx
+import qualified Data.Text                     as T
+import qualified Data.Text.Encoding            as T
 
-import           Network.HTTP.Conduit        hiding (httpLBS)
-import           Network.HTTP.Simple         hiding (httpLbs)
-import           Text.HTML.DOM               (parseLBS)
+import           Network.HTTP.Conduit          hiding (httpLBS)
+import           Network.HTTP.Simple           hiding (httpLbs)
+import           Text.HTML.DOM                 (parseLBS)
 import           Text.Show.Unicode
-import           Text.XML                    hiding (parseLBS)
+import           Text.XML                      hiding (parseLBS)
 import           Text.XML.Cursor
-import           Types                       (Chapter (..), Manga (..),
-                                              Page (..), defaultManga)
+
+import           ROD.Gentleman.Site.CloudFlare (decryptCookie)
+import           ROD.Gentleman.Types           (Chapter (..), Manga (..),
+                                                Page (..), defaultManga)
 
 
 lastToInt :: T.Text -> Int
@@ -60,13 +61,13 @@ mangaList = do
          let title = head $ x $// element "div" &// content
          let link = head $ x $// element "a" >=> attribute "href"
          return defaultManga
-               { Types.id   = lastToInt link
+               { idx        = lastToInt link
                , name       = title
                }
 
 mangaDetail :: Manga -> IO Manga
 mangaDetail manga = do
-  doc <- requestDoc ("http://marumaru.in/b/manga/" ++ show (Types.id manga))
+  doc <- requestDoc ("http://marumaru.in/b/manga/" ++ show (idx manga))
   let links = catMaybes $ fromDocument doc
                             $// attributeIs "id" "vContent" &// element "a"
                             >=> \x -> do
@@ -104,7 +105,7 @@ getCookieJar = do
   let req1 = setRequestHeader "User-Agent" ["Android 5.0"]
            $ setRequestHeader "Cache-Control" ["no-cache"] req'
   res1 <- httpLbs req1 manager
-  let cookie = Sucuri.decryptCookie $ getResponseBody res1
+  let cookie = decryptCookie $ getResponseBody res1
   let jar1 = createCookieJar $ cookie:destroyCookieJar (responseCookieJar res1)
 
   -- login

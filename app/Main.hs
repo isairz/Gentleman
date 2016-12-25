@@ -34,22 +34,23 @@ scrapMarumaru = do
   mangas <- Marumaru.mangaList
 
   -- Get Manga Detail & Chapter Link
-  mangas' <- forPool 1000 mangas $ \manga -> do
+  mangas' <- forPool 1000 (zip mangas [1..]) $ \(manga, idx) -> do
     manga' <- Marumaru.mangaDetail manga
     -- FIXME: Show Progress
-    -- T.putStrLn $ name manga `T.append` " " `T.append` (T.pack $ show $ length $ chapters manga')
+    T.putStr $ T.pack ("[" ++ show idx ++ "/" ++ show (length mangas) ++ "] ")
+      `T.append` name manga `T.append` " " `T.append` T.pack (show $ length $ chapters manga') `T.append` "\n"
     return manga'
 
-  Types.id manga
-  mapM_ (\manga' -> mapM_ (print . chapter_id) $ chapters manga') mangas'
+  -- mapM_ (mapM_ (print . chapter_id) . chapters) mangas'
+  return []
   -- Get Image srcs
-  let cids = map chapter_id $ concat $ chapters <$> mangas'
-  jar <- Marumaru.getCookieJar
-  forPool 1000 cids $ \cid -> do
-    srcs <- Marumaru.imageList jar cid
-    T.putStrLn $ (T.pack $ show cid) `T.append` " (" `T.append` (T.pack $ show $ length srcs) `T.append` ")"
-    mapM_ T.putStrLn srcs
-  return mangas'
+  -- let cids = map chapter_id $ concat $ chapters <$> mangas'
+  -- jar <- Marumaru.getCookieJar
+  -- forPool 1000 cids $ \cid -> do
+  --   srcs <- Marumaru.imageList jar cid
+  --   T.putStrLn $ T.pack (show cid) `T.append` " (" `T.append` T.pack (show $ length srcs) `T.append` ")"
+  --   -- mapM_ T.putStrLn srcs
+  -- return mangas'
 
 singleMarumaru cid = do
   jar <- Marumaru.getCookieJar

@@ -7,21 +7,25 @@ module Marumaru
     , getCookieJar
     ) where
 
-import           Control.Exception.Extra
 import           Control.Monad
+import           Control.Retry
+import           Data.Char                   (isDigit, ord)
+import           Data.Maybe                  (catMaybes)
+import           Data.Monoid                 ((<>))
+
+import qualified Data.ByteString.Char8       as B
 import qualified Data.ByteString.Lazy.Char8  as BL
 import qualified Data.ByteString.Lazy.Search as BL
-import qualified Data.ByteString.Lazy.UTF8   as BL
-import           Data.Char                   (isDigit, ord)
-import           Data.Maybe
+import qualified Data.ByteString.Lazy.UTF8   as BLcx
 import qualified Data.Text                   as T
 import qualified Data.Text.Encoding          as T
-import           Network.HTTP.Conduit        as Http
-import           Network.HTTP.Simple
 import qualified Sucuri
-import           Text.HTML.DOM               as Html
+
+import           Network.HTTP.Conduit        hiding (httpLBS)
+import           Network.HTTP.Simple         hiding (httpLbs)
+import           Text.HTML.DOM               (parseLBS)
 import           Text.Show.Unicode
-import           Text.XML
+import           Text.XML                    hiding (parseLBS)
 import           Text.XML.Cursor
 import           Types                       (Chapter (..), Manga (..),
                                               Page (..), defaultManga)
@@ -31,14 +35,21 @@ lastToInt :: T.Text -> Int
 lastToInt t = T.foldl (\n c -> n * 10 + ord c - ord '0') 0
                         $ T.takeWhileEnd isDigit t
 
+limitedBackoff = exponentialBackoff 50 <> limitRetries 10
+
 requestWithRetry :: Request -> IO (Response BL.ByteString)
-requestWithRetry req = retry 10 $ httpLBS req
+requestWithRetry req = recoverAll limitedBackoff (\re -> do
+  if rsIterNumber re > 0
+    then putStrLn $ B.unpack (host req) ++ B.unpack (path req) ++ " " ++ show (rsIterNumber re)
+    else pure ()
+  httpLBS req
+  )
 
 requestDoc :: String -> IO Document
 requestDoc url = do
   url' <- parseRequest url
   response <- requestWithRetry $ setRequestHeader "User-Agent" ["Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.23 Mobile Safari/537.36"] url'
-  return . Html.parseLBS . getResponseBody $ response
+  return . parseLBS . getResponseBody $ response
 
 mangaList :: IO [Manga]
 mangaList = do
@@ -76,13 +87,13 @@ imageList jar i = do
           $ setRequestHeader "Cache-Control" ["max-age=0"]
           $ setRequestHeader "Upgrade-Insecure-Requests" ["1"]
           $ req' { cookieJar = Just jar }
-  body <- liftM getResponseBody $ requestWithRetry req
+  body <- getResponseBody <$> requestWithRetry req
   return $ getDataSrcs body
 
 getDataSrcs :: BL.ByteString -> [Page]
 getDataSrcs str = do
   let (src, left) = BL.breakOn "\"" . snd $ BL.breakAfter "data-src=\"" str
-  if BL.null left then [] else (T.decodeUtf8 $ BL.toStrict src):(getDataSrcs left)
+  if BL.null left then [] else T.decodeUtf8 (BL.toStrict src) : getDataSrcs left
 
 
 getCookieJar :: IO CookieJar
@@ -92,9 +103,9 @@ getCookieJar = do
   req' <- parseRequest "http://www.yuncomics.com/archives/213688?123124"
   let req1 = setRequestHeader "User-Agent" ["Android 5.0"]
            $ setRequestHeader "Cache-Control" ["no-cache"] req'
-  res1 <- Http.httpLbs req1 manager
+  res1 <- httpLbs req1 manager
   let cookie = Sucuri.decryptCookie $ getResponseBody res1
-  let jar1 = createCookieJar $ cookie:(destroyCookieJar $ responseCookieJar res1)
+  let jar1 = createCookieJar $ cookie:destroyCookieJar (responseCookieJar res1)
 
   -- login
   req' <- parseRequest "POST http://www.yuncomics.com/wp-login.php?action=postpass"
@@ -102,7 +113,7 @@ getCookieJar = do
            $ setRequestHeader "User-Agent" ["Android 5.0"]
            -- $ setRequestHeader "Cache-Control" ["no-cache"]
            $ req' { cookieJar = Just jar1 }
-  res2 <- Http.httpLbs req2 manager
+  res2 <- httpLbs req2 manager
   let jar2 = responseCookieJar res2
 
   return jar2

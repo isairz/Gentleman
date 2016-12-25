@@ -25,9 +25,9 @@ library
                      , attoparsec
                      , base64-bytestring
                      , bytestring
-                     , extra
                      , html-conduit
                      , http-conduit
+                     , retry
                      , stringsearch
                      , text
                      , time

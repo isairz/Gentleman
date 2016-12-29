@@ -79,6 +79,10 @@ mangaDetail manga = do
                                               , chapter_name = name
                                               }
                                           else Nothing
+  -- Error Log for no parsing
+  -- if null links
+  --   then BL.putStrLn $ renderLBS def doc
+  --   else pure ()
   return manga { chapters = links }
 
 imageList :: CookieJar -> Int -> IO [Page]
@@ -89,7 +93,11 @@ imageList jar i = do
           $ setRequestHeader "Upgrade-Insecure-Requests" ["1"]
           $ req' { cookieJar = Just jar }
   body <- getResponseBody <$> requestWithRetry req
-  return $ getDataSrcs body
+  let srcs = getDataSrcs body
+  -- if null srcs
+  --   then BL.putStrLn body
+  --   else pure ()
+  return srcs
 
 getDataSrcs :: BL.ByteString -> [Page]
 getDataSrcs str = do

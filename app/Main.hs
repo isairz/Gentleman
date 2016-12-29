@@ -5,12 +5,13 @@ module Main where
 import           Control.Concurrent.Async
 import           Control.Concurrent.MSem
 import           Control.Monad
+import           Data.List
 import qualified Data.Text                   as T
 import qualified Data.Text.IO                as T
 import qualified Data.Traversable            as T
 
 import           ROD.Gentleman.Site.Marumaru as Marumaru
-import           ROD.Gentleman.Types as Types
+import           ROD.Gentleman.Types         as Types
 
 
 main :: IO ()
@@ -36,20 +37,19 @@ scrapMarumaru = do
   mangas' <- forPool 1000 (zip mangas [1..]) $ \(manga, idx) -> do
     manga' <- Marumaru.mangaDetail manga
     -- FIXME: Show Progress
-    T.putStr $ T.pack ("[" ++ show idx ++ "/" ++ show (length mangas) ++ "] ")
-      `T.append` name manga `T.append` " " `T.append` T.pack (show $ length $ chapters manga') `T.append` "\n"
+    putStrLn $ "[" ++ show idx ++ "/" ++ show (length mangas) ++ "] "
+      ++ T.unpack (name manga) ++ " " ++ show (length $ chapters manga')
+      ++ "\n\t" ++ intercalate "\n\t" (map (\c -> T.unpack (chapter_name c) ++ " " ++ show (chapter_id c)) $ chapters manga')
     return manga'
 
-  -- mapM_ (mapM_ (print . chapter_id) . chapters) mangas'
-  return []
   -- Get Image srcs
-  -- let cids = map chapter_id $ concat $ chapters <$> mangas'
-  -- jar <- Marumaru.getCookieJar
-  -- forPool 1000 cids $ \cid -> do
-  --   srcs <- Marumaru.imageList jar cid
-  --   T.putStrLn $ T.pack (show cid) `T.append` " (" `T.append` T.pack (show $ length srcs) `T.append` ")"
-  --   -- mapM_ T.putStrLn srcs
-  -- return mangas'
+  let cids = map chapter_id $ concat $ chapters <$> mangas'
+  print $ show $ length cids
+  jar <- Marumaru.getCookieJar
+  forPool 1000 cids $ \cid -> do
+    srcs <- Marumaru.imageList jar cid
+    putStrLn $ show cid ++ " (" ++ show (length srcs) ++ ")"
+  return mangas'
 
 singleMarumaru cid = do
   jar <- Marumaru.getCookieJar

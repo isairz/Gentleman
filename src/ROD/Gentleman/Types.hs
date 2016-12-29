@@ -22,7 +22,8 @@ data Manga = Manga
   , chapters   :: [Chapter]
   } deriving (Show, Eq)
 
-data Chapter = Chapter
+data Chapter = RelatedManga Manga
+  | Chapter
   { chapter_id   :: Int
   , chapter_name :: Text
   } deriving (Show, Eq)

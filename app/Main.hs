@@ -6,12 +6,12 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.MSem
 import           Control.Monad
 import           Data.List
-import qualified Data.Text                   as T
-import qualified Data.Text.IO                as T
-import qualified Data.Traversable            as T
+import qualified Data.Text                    as T
+import qualified Data.Text.IO                 as T
+import qualified Data.Traversable             as T
 
-import           ROD.Gentleman.Site.Marumaru as Marumaru
-import           ROD.Gentleman.Types         as Types
+import           ROD.Gentleman.Database.Types
+import           ROD.Gentleman.Site.Marumaru  as Marumaru
 
 
 main :: IO ()

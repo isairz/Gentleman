@@ -27,9 +27,8 @@ import           Text.Show.Unicode
 import           Text.XML                      hiding (parseLBS)
 import           Text.XML.Cursor
 
+import           ROD.Gentleman.Database.Types
 import           ROD.Gentleman.Site.CloudFlare (decryptCookie)
-import           ROD.Gentleman.Types           (Chapter (..), Manga (..),
-                                                Page (..), defaultManga)
 
 
 lastToInt :: T.Text -> Int

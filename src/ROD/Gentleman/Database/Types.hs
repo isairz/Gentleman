@@ -9,7 +9,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-module ROD.Gentleman.Types
+module ROD.Gentleman.Database.Types
     ( Manga(..)
     , defaultManga
     , Chapter(..)

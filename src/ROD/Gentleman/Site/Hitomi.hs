@@ -8,7 +8,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.Aeson
 import           Network.HTTP.Simple
-import           ROD.Gentleman.Types (Manga (..))
+import           ROD.Gentleman.Database.Types
 
 instance FromJSON Manga where
   parseJSON (Object v) = Manga

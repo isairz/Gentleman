@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     ROD.Gentleman
-                     , ROD.Gentleman.Types
+                     , ROD.Gentleman.Database.Types
                      , ROD.Gentleman.Site.CloudFlare
                     --  , ROD.Gentleman.Site.Hitomi
                      , ROD.Gentleman.Site.Marumaru

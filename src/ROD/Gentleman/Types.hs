@@ -1,4 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module ROD.Gentleman.Types
     ( Manga(..)
@@ -7,38 +16,43 @@ module ROD.Gentleman.Types
     , Page(..)
     ) where
 
+import           Control.Monad.IO.Class      (liftIO)
 import           Data.Text
+import           Database.Persist
+import           Database.Persist.Postgresql
+import           Database.Persist.TH
 
-data Manga = Manga
-  { idx        :: Int
-  , name       :: Text
-  , authors    :: [Text]
-  , groups     :: [Text]
-  , type'      :: Text
-  , language   :: Text
-  , serieses   :: [Text]
-  , characters :: [Text]
-  , tags       :: [Text]
-  , chapters   :: [Chapter]
-  } deriving (Show, Eq)
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Manga
+  idx        Int
+  name       Text
+  authors    [Text]
+  groups     [Text]
+  type       Text
+  language   Text
+  serieses   [Text]
+  characters [Text]
+  tags       [Text]
+  Primary    idx
+  deriving   Show
 
-data Chapter = RelatedManga Manga
-  | Chapter
-  { chapter_id   :: Int
-  , chapter_name :: Text
-  } deriving (Show, Eq)
+Chapter
+  idx      Int
+  name     Text
+  deriving Show
 
-type Page = Text
+Page
+  src Text
+|]
 
 defaultManga = Manga
-  { idx        = 0
-  , name       = ""
-  , authors    = []
-  , groups     = []
-  , type'      = ""
-  , language   = ""
-  , serieses   = []
-  , characters = []
-  , tags       = []
-  , chapters   = []
+  { mangaIdx         = 0
+  , mangaName       = ""
+  , mangaAuthors    = []
+  , mangaGroups     = []
+  , mangaType       = ""
+  , mangaLanguage   = ""
+  , mangaSerieses   = []
+  , mangaCharacters = []
+  , mangaTags       = []
   }

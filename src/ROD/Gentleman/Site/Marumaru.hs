@@ -61,13 +61,13 @@ mangaList = do
          let title = head $ x $// element "div" &// content
          let link = head $ x $// element "a" >=> attribute "href"
          return defaultManga
-               { idx        = lastToInt link
-               , name       = title
+               { mangaIdx        = lastToInt link
+               , mangaName       = title
                }
 
-mangaDetail :: Manga -> IO Manga
+mangaDetail :: Manga -> IO (Manga, [Chapter])
 mangaDetail manga = do
-  doc <- requestDoc ("http://marumaru.in/b/manga/" ++ show (idx manga))
+  doc <- requestDoc ("http://marumaru.in/b/manga/" ++ show (mangaIdx manga))
   let links = catMaybes $ fromDocument doc
                             $// attributeIs "id" "vContent" &// element "a"
                             >=> \x -> do
@@ -75,15 +75,15 @@ mangaDetail manga = do
                                  let link = head $ x $| attribute "href"
                                  return $ if (not . T.null $ name) && ("archives" `T.isInfixOf` link)
                                           then Just Chapter
-                                              { chapter_id = lastToInt link
-                                              , chapter_name = name
+                                              { chapterIdx = lastToInt link
+                                              , chapterName = name
                                               }
                                           else Nothing
   -- Error Log for no parsing
   -- if null links
   --   then BL.putStrLn $ renderLBS def doc
   --   else pure ()
-  return manga { chapters = links }
+  return (manga, links)
 
 imageList :: CookieJar -> Int -> IO [Page]
 imageList jar i = do
@@ -102,7 +102,7 @@ imageList jar i = do
 getDataSrcs :: BL.ByteString -> [Page]
 getDataSrcs str = do
   let (src, left) = BL.breakOn "\"" . snd $ BL.breakAfter "data-src=\"" str
-  if BL.null left then [] else T.decodeUtf8 (BL.toStrict src) : getDataSrcs left
+  if BL.null left then [] else Page (T.decodeUtf8 (BL.toStrict src)) : getDataSrcs left
 
 
 getCookieJar :: IO CookieJar

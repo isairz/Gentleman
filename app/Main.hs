@@ -28,31 +28,31 @@ mapPool max f xs = do
 forPool :: T.Traversable t => Int -> t a -> (a -> IO b) -> IO (t b)
 forPool max = flip $ mapPool max
 
-scrapMarumaru :: IO [Manga]
+scrapMarumaru :: IO [(Manga, [Chapter])]
 scrapMarumaru = do
   -- Get Manga List
   mangas <- Marumaru.mangaList
 
   -- Get Manga Detail & Chapter Link
-  mangas' <- forPool 1000 (zip mangas [1..]) $ \(manga, idx) -> do
-    manga' <- Marumaru.mangaDetail manga
+  mangaDetails <- forPool 1000 (zip mangas [1..]) $ \(manga, idx) -> do
+    (manga', chapters) <- Marumaru.mangaDetail manga
     -- FIXME: Show Progress
     putStrLn $ "[" ++ show idx ++ "/" ++ show (length mangas) ++ "] "
-      ++ T.unpack (name manga) ++ " " ++ show (length $ chapters manga')
-      ++ "\n\t" ++ intercalate "\n\t" (map (\c -> T.unpack (chapter_name c) ++ " " ++ show (chapter_id c)) $ chapters manga')
-    return manga'
+      ++ T.unpack (mangaName manga) ++ " " ++ show (length chapters)
+      ++ "\n\t" ++ intercalate "\n\t" (map (\c -> T.unpack (chapterName c) ++ " " ++ show (chapterIdx c)) chapters)
+    return (manga', chapters)
 
   -- Get Image srcs
-  let cids = map chapter_id $ concat $ chapters <$> mangas'
+  let cids = map chapterIdx $ concat $ snd <$> mangaDetails
   print $ show $ length cids
   jar <- Marumaru.getCookieJar
   forPool 1000 cids $ \cid -> do
     srcs <- Marumaru.imageList jar cid
     putStrLn $ show cid ++ " (" ++ show (length srcs) ++ ")"
-  return mangas'
+  return mangaDetails
 
 singleMarumaru cid = do
   jar <- Marumaru.getCookieJar
-  srcs <- Marumaru.imageList jar cid
-  mapM_ T.putStrLn srcs
+  pages <- Marumaru.imageList jar cid
+  mapM_ (T.putStrLn . pageSrc) pages
   return ()

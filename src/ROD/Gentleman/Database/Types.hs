@@ -10,30 +10,33 @@
 {-# LANGUAGE TypeFamilies               #-}
 
 module ROD.Gentleman.Database.Types
-    ( Manga(..)
-    , defaultManga
-    , Chapter(..)
-    , Page(..)
+    ( module ROD.Gentleman.Database.Types
+    , module Database.Persist.Class
+    , module Database.Persist.Postgresql
+    , module Database.Persist.Postgresql.Json
     ) where
 
-import           Control.Monad.IO.Class      (liftIO)
+import           Control.Monad.IO.Class           (liftIO)
+import           Data.Aeson
+import           Data.Maybe
 import           Data.Text
 import           Database.Persist
+import           Database.Persist.Class
 import           Database.Persist.Postgresql
+import           Database.Persist.Postgresql.Json
 import           Database.Persist.TH
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Manga
   idx        Int
   name       Text
-  authors    [Text]
-  groups     [Text]
+  authors    Jsonb
+  groups     Jsonb
   type       Text
   language   Text
-  serieses   [Text]
-  characters [Text]
-  tags       [Text]
-  Primary    idx
+  serieses   Jsonb
+  characters Jsonb
+  tags       Jsonb
   deriving   Show
 
 Chapter
@@ -48,11 +51,11 @@ Page
 defaultManga = Manga
   { mangaIdx         = 0
   , mangaName       = ""
-  , mangaAuthors    = []
-  , mangaGroups     = []
+  , mangaAuthors    = emptyArray
+  , mangaGroups     = emptyArray
   , mangaType       = ""
   , mangaLanguage   = ""
-  , mangaSerieses   = []
-  , mangaCharacters = []
-  , mangaTags       = []
-  }
+  , mangaSerieses   = emptyArray
+  , mangaCharacters = emptyArray
+  , mangaTags       = emptyArray
+  } where emptyArray = Jsonb $ toJSON ()

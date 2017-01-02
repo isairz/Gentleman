@@ -10,13 +10,17 @@ module ROD.Gentleman.Site.Marumaru
 import           Control.Monad
 import           Control.Retry
 import           Data.Char                     (isDigit, ord)
-import           Data.Maybe                    (catMaybes)
+import           Data.Function
+import           Data.List
+import           Data.Maybe
 import           Data.Monoid                   ((<>))
+import           Data.Vector                   (fromList)
 
+import qualified Data.Aeson                    as JSON
 import qualified Data.ByteString.Char8         as B
 import qualified Data.ByteString.Lazy.Char8    as BL
 import qualified Data.ByteString.Lazy.Search   as BL
-import qualified Data.ByteString.Lazy.UTF8     as BLcx
+import qualified Data.ByteString.Lazy.UTF8     as BL
 import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as T
 
@@ -29,7 +33,6 @@ import           Text.XML.Cursor
 
 import           ROD.Gentleman.Database.Types
 import           ROD.Gentleman.Site.CloudFlare (decryptCookie)
-
 
 lastToInt :: T.Text -> Int
 lastToInt t = T.foldl (\n c -> n * 10 + ord c - ord '0') 0
@@ -54,19 +57,27 @@ requestDoc url = do
 mangaList :: IO [Manga]
 mangaList = do
   doc <- requestDoc "http://marumaru.in/p/mobilemangamain"
-  return $ fromDocument doc
+  return $ sortBy (on compare mangaIdx) $ fromDocument doc
     $// attributeIs "class" "widget_review01" &/  element "ul" &/ element "li"
     >=> \x -> do
-         let title = head $ x $// element "div" &// content
-         let link = head $ x $// element "a" >=> attribute "href"
+         let title = T.concat $ x $// element "div" &// content
+         let idx = lastToInt $ T.concat $ x $// element "a" >=> attribute "href"
          return defaultManga
-               { mangaIdx        = lastToInt link
+               { mangaIdx        = idx
                , mangaName       = title
                }
 
-mangaDetail :: Manga -> IO (Manga, [Chapter])
-mangaDetail manga = do
-  doc <- requestDoc ("http://marumaru.in/b/manga/" ++ show (mangaIdx manga))
+mangaDetail :: Int -> IO (Manga, [Chapter])
+mangaDetail mid = do
+  doc <- requestDoc ("http://marumaru.in/b/manga/" ++ show mid)
+  let rawTag = T.concat $ fromDocument doc $// element "meta" >=> attributeIs "name" "keywords" >=> attribute "content"
+  let (authors, tags) = foldl tagParser ([], []) (T.splitOn "," rawTag)
+  let manga = defaultManga
+              { mangaIdx = mid
+              , mangaName = head $ fromDocument doc $// element "meta" >=> attributeIs "name" "subject" >=> attribute "content"
+              , mangaAuthors = Jsonb $ JSON.toJSON $ fromList authors
+              , mangaTags = Jsonb $ JSON.toJSON $ fromList tags
+              }
   let links = catMaybes $ fromDocument doc
                             $// attributeIs "id" "vContent" &// element "a"
                             >=> \x -> do
@@ -78,11 +89,10 @@ mangaDetail manga = do
                                               , chapterName = name
                                               }
                                           else Nothing
-  -- Error Log for no parsing
-  -- if null links
-  --   then BL.putStrLn $ renderLBS def doc
-  --   else pure ()
   return (manga, links)
+    where tagParser (as, ts) t = ( as ++ maybeToList (T.stripPrefix "A:" t)
+                                 , ts ++ maybeToList (T.stripPrefix "G:" t)
+                                 )
 
 imageList :: CookieJar -> Int -> IO [Page]
 imageList jar i = do

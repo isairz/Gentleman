@@ -16,10 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     ROD.Gentleman
+                     , ROD.Gentleman.Database.Store
                      , ROD.Gentleman.Database.Types
                      , ROD.Gentleman.Site.CloudFlare
                     --  , ROD.Gentleman.Site.Hitomi
                      , ROD.Gentleman.Site.Marumaru
+                     , Database.Persist.Postgresql.Json
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , attoparsec
@@ -27,6 +29,7 @@ library
                      , bytestring
                      , html-conduit
                      , http-conduit
+                     , monad-control
                      , persistent
                      , persistent-postgresql
                      , persistent-template
@@ -36,6 +39,7 @@ library
                      , time
                      , unicode-show
                      , utf8-string
+                     , vector
                      , xml-conduit
   default-language:    Haskell2010
 
@@ -46,6 +50,9 @@ executable gentleman
   build-depends:       base
                      , async
                      , gentleman
+                     , monad-control
+                     , monad-logger
+                     , resourcet
                      , SafeSemaphore
                      , text
                      , unicode-show

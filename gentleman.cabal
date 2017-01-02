@@ -21,25 +21,21 @@ library
                      , ROD.Gentleman.Site.CloudFlare
                     --  , ROD.Gentleman.Site.Hitomi
                      , ROD.Gentleman.Site.Marumaru
-                     , Database.Persist.Postgresql.Json
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , attoparsec
                      , base64-bytestring
                      , bytestring
+                     , hasql
                      , html-conduit
                      , http-conduit
                      , monad-control
-                     , persistent
-                     , persistent-postgresql
-                     , persistent-template
                      , retry
                      , stringsearch
                      , text
                      , time
                      , unicode-show
                      , utf8-string
-                     , vector
                      , xml-conduit
   default-language:    Haskell2010
 

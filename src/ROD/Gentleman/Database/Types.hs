@@ -1,61 +1,46 @@
-{-# LANGUAGE EmptyDataDecls             #-}
-{-# LANGUAGE ExistentialQuantification  #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module ROD.Gentleman.Database.Types
-    ( module ROD.Gentleman.Database.Types
-    , module Database.Persist.Class
-    , module Database.Persist.Postgresql
-    , module Database.Persist.Postgresql.Json
-    ) where
+module ROD.Gentleman.Database.Types where
 
-import           Control.Monad.IO.Class           (liftIO)
-import           Data.Aeson
-import           Data.Maybe
-import           Data.Text
-import           Database.Persist
-import           Database.Persist.Class
-import           Database.Persist.Postgresql
-import           Database.Persist.Postgresql.Json
-import           Database.Persist.TH
+import Data.Text
 
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Manga
-  idx        Int
-  name       Text
-  authors    Jsonb
-  groups     Jsonb
-  type       Text
-  language   Text
-  serieses   Jsonb
-  characters Jsonb
-  tags       Jsonb
-  deriving   Show
+newtype Key entity =
+  Key Int
+  deriving (Eq, Ord)
 
-Chapter
-  idx      Int
-  name     Text
-  deriving Show
+instance Show (Key entity) where
+  show (Key k) = show k
 
-Page
-  src Text
-|]
+type MangaId = Key Manga
 
-defaultManga = Manga
-  { mangaIdx         = 0
-  , mangaName       = ""
-  , mangaAuthors    = emptyArray
-  , mangaGroups     = emptyArray
-  , mangaType       = ""
-  , mangaLanguage   = ""
-  , mangaSerieses   = emptyArray
+data Manga = Manga
+  { mangaName :: Text
+  , mangaAuthors :: [Text]
+  , mangaGroups :: [Text]
+  , mangaType :: Text
+  , mangaLanguage :: Text
+  , mangaSerieses :: [Text]
+  , mangaCharacters :: [Text]
+  , mangaTags :: [Text]
+  }
+
+type ChapterId = Key Chapter
+
+data Chapter = Chapter
+  { chapterName :: Text
+  , chapterSrcs :: [Text]
+  } deriving (Show, Eq)
+
+defaultManga =
+  Manga
+  { mangaName = ""
+  , mangaAuthors = emptyArray
+  , mangaGroups = emptyArray
+  , mangaType = ""
+  , mangaLanguage = ""
+  , mangaSerieses = emptyArray
   , mangaCharacters = emptyArray
-  , mangaTags       = emptyArray
-  } where emptyArray = Jsonb $ toJSON ()
+  , mangaTags = emptyArray
+  }
+  where
+    emptyArray = []

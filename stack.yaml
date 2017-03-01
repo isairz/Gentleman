@@ -3,6 +3,7 @@ resolver: lts-7.13
 compiler: ghc-8.0.1
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- hasql-pool-0.4.1
 flags: {}
 extra-package-dbs: []

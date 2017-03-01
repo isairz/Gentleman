@@ -26,7 +26,9 @@ library
                      , attoparsec
                      , base64-bytestring
                      , bytestring
+                     , contravariant
                      , hasql
+                     , hasql-pool
                      , html-conduit
                      , http-conduit
                      , monad-control

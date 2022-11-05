@@ -151,24 +151,25 @@ getCookieJar
   -- cloudflare cookie
  = do
   manager <- newManager tlsManagerSettings
-  req' <- parseRequest "http://www.yuncomics.com/archives/213688?123124"
-  let req1 =
-        setRequestHeader "User-Agent" ["Android 5.0"] $
-        setRequestHeader "Cache-Control" ["no-cache"] req'
+  let req1 = setRequestHeader "User-Agent" ["Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) CriOS/56.0.2924.75 Mobile/14E5239e Safari/602.1"]
+           $ setRequestHeader "Cache-Control" ["no-cache"]
+           $ setRequestHeader "Upgrade-Insecure-Requests" ["1"]
+           $ setRequestHeader "Accept" ["text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"]
+           $ setRequestHeader "Accept-Encoding" ["gzip, deflate"]
+           $ "http://wasabisyrup.com/archives/213688?type=pass"
   res1 <- httpLbs req1 manager
-  let cookie = decryptCookie $ getResponseBody res1
-  let jar1 =
-        createCookieJar $ cookie : destroyCookieJar (responseCookieJar res1)
+  -- let cookie = decryptCookie $ getResponseBody res1
+  -- let jar1 =
+  --       createCookieJar $ cookie : destroyCookieJar (responseCookieJar res1)
   -- login
-  req' <-
-    parseRequest "POST http://www.yuncomics.com/wp-login.php?action=postpass"
-  let req2 =
-        setRequestBodyURLEncoded
-          [("post_password", "qndxkr"), ("Submit", "Submit")] $
-        setRequestHeader "User-Agent" ["Android 5.0"]
-           -- $ setRequestHeader "Cache-Control" ["no-cache"]
-         $
-        req' {cookieJar = Just jar1}
+  let req2 = setRequestBodyURLEncoded [("post_password", "qndxkr"), ("Submit", "Submit")]
+           $ setRequestHeader "User-Agent" ["Android 5.0"]
+           $ setRequestHeader "Cache-Control" ["no-cache"]
+           $ setRequestHeader "Upgrade-Insecure-Requests" ["1"]
+           $ setRequestHeader "Accept" ["text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"]
+           $ setRequestHeader "Accept-Encoding" ["gzip, deflate"]
+           $ "POST http://wasabisyrup.com/wp-login.php?action=postpass" {cookieJar = Nothing}
   res2 <- httpLbs req2 manager
+  print res2
   let jar2 = responseCookieJar res2
   return jar2

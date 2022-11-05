@@ -1,9 +1,7 @@
 compiler-check: match-exact
-resolver: lts-7.13
-compiler: ghc-8.0.1
+resolver: lts-10.6
 packages:
 - '.'
 extra-deps:
-- hasql-pool-0.4.1
 flags: {}
 extra-package-dbs: []

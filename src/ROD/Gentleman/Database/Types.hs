@@ -5,7 +5,7 @@ module ROD.Gentleman.Database.Types where
 import Data.Text
 
 newtype Key entity =
-  Key Int
+  Key Text
   deriving (Eq, Ord)
 
 instance Show (Key entity) where
